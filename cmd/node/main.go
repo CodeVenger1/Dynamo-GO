@@ -1,7 +1,7 @@
 package main
 
 import (
-	"dynamo-go/internals/ring"
+	"dynamo-go/internal/ring"
 	"fmt"
 )
 
