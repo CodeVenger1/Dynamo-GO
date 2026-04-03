@@ -23,12 +23,14 @@ func main() {
 	}
 
 	replicationFactor := 3
+	Wq := 2
+	Rq := 2
 
 	if replicationFactor > len(stores) {
 		panic("replication factor cannot exceed number of nodes")
 	}
 
-	api.Init(ring, stores, replicationFactor)
+	api.Init(ring, stores, replicationFactor, Wq, Rq)
 
 	api.SetupRoutes()
 

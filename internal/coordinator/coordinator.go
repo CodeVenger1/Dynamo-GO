@@ -3,50 +3,65 @@ package coordinator
 import (
 	"dynamo-go/internal/ring"
 	"dynamo-go/internal/storage"
-	"fmt"
 )
 
 type Coordinator struct {
-	ring              *ring.HashRing
-	stores            map[string]*storage.MemoryStore
+	ring   *ring.HashRing
+	stores map[string]*storage.MemoryStore
+
 	replicationFactor int
+	Wq                int
+	Rq                int
 }
 
 // constructor
-func NewCoordinator(r *ring.HashRing, s map[string]*storage.MemoryStore, rf int) *Coordinator {
+func NewCoordinator(r *ring.HashRing, s map[string]*storage.MemoryStore, rf, wq, rq int) *Coordinator {
 	return &Coordinator{
 		ring:              r,
 		stores:            s,
 		replicationFactor: rf,
+		Wq:                wq,
+		Rq:                rq,
 	}
 }
 
-// func Put: Put with replication
-func (c *Coordinator) Put(key, value string) {
-	fmt.Println("PUT key:", key)
+// func Put: Put with replication(Write Quorum)
+func (c *Coordinator) Put(key, value string) bool {
 	nodes := c.ring.GetNodes(key, c.replicationFactor)
-	fmt.Println("Replicating to nodes:", nodes)
+
+	success := 0
+
 	for _, node := range nodes {
 		c.stores[node].Put(key, value)
-		fmt.Println("Writing to node:", node)
+		success++
+
+		if success >= c.Wq {
+			return true
+		}
 	}
 
+	return false
 }
 
-// func Get: Get with fallback
+// func Get: Get with fallback(Read Quorum)
 func (c *Coordinator) Get(key string) (string, bool) {
-	fmt.Println("GET key:", key)
-
 	nodes := c.ring.GetNodes(key, c.replicationFactor)
+
+	count := 0
+	var result string
 
 	for _, node := range nodes {
 		val, ok := c.stores[node].Get(key)
-		fmt.Println("Checking node:", node, "Found:", ok)
 
 		if ok {
-			fmt.Println("Read from node:", node)
-			return val, true
+			result = val
+			count++
+
+			if count >= c.Rq {
+				return result, true
+			}
 		}
 	}
+
 	return "", false
 }
