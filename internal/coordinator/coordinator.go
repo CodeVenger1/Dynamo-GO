@@ -65,3 +65,12 @@ func (c *Coordinator) Get(key string) (string, bool) {
 
 	return "", false
 }
+
+// func Delete: Delete with fallback
+func (c *Coordinator) Delete(key string) {
+	nodes := c.ring.GetNodes(key, c.replicationFactor)
+
+	for _, node := range nodes {
+		c.stores[node].Delete(key)
+	}
+}

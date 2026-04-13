@@ -15,8 +15,12 @@ func PutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	coord.Put(key, value)
+	success := coord.Put(key, value)
 
+	if !success {
+		http.Error(w, "write failed", http.StatusInternalServerError)
+		return
+	}
 	fmt.Fprintf(w, "Stored successfully\n")
 }
 
@@ -46,5 +50,6 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing key", http.StatusBadRequest)
 		return
 	}
+	coord.Delete(key)
 	fmt.Fprintf(w, "Deleted key: %s\n", key)
 }
